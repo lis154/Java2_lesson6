@@ -12,13 +12,20 @@
 
 <?scenebuilder-styleeshet /css/Style.css?>
 
+<?import javafx.scene.control.PasswordField?>
 <VBox fx:controller="com.company.Client.Controller"
       xmlns:fx="http://javafx.com/fxml" alignment="center">
 
+    <HBox fx:id="upperPannel">
+        <TextField HBox.hgrow="ALWAYS" promptText="Логин" fx:id="loginField"/>
+        <PasswordField promptText="пароль" fx:id="passwordField" onAction="#tryToAuth"/>
+        <Button text = "Авторизоваться" onAction="#tryToAuth"/>
+
+    </HBox>
 
     <TextArea fx:id="textAreaFields" editable="false" VBox.vgrow = "ALWAYS"/>
 
-    <HBox>
+    <HBox fx:id="bottomPanel" managed="false" visible="false">
         <TextField fx:id="textField" HBox.hgrow="ALWAYS" onAction="#sendMsg" promptText="Введите сообщение..."/>
         <Button fx:id="btn" onAction="#sendMsg" text="Send Msg"/>
     </HBox>

@@ -1,7 +1,9 @@
 package com.company.Client;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -37,6 +39,9 @@ public class Controller {
     @FXML
     PasswordField passwordField;  // устанавливаем связь с FXML
 
+    @FXML
+    ListView<String> clientList;
+
     private boolean isAuthorized; // флаг видимости
 
 
@@ -56,6 +61,8 @@ public class Controller {
             upperPannel.setManaged(true);
             bottomPanel.setVisible(false);
             bottomPanel.setManaged(false);
+            clientList.setVisible(false);
+            clientList.setManaged(false);
         }
         else
         {
@@ -63,6 +70,8 @@ public class Controller {
             upperPannel.setManaged(false);
             bottomPanel.setVisible(true);
             bottomPanel.setManaged(true);
+            clientList.setVisible(true);
+            clientList.setManaged(true);
         }
 
     }
@@ -74,7 +83,7 @@ public class Controller {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
             setAutorized(false); // не видим ничего кроме панели авторизации
-            new Thread(new Runnable() {
+            Thread t1 = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try{
@@ -92,13 +101,35 @@ public class Controller {
                         }
 
                     }
-                        while (true) // работаем непосредственно с отправкой сообщения
+
+                    while (true) // работаем непосредственно с отправкой сообщения
                         {
                             String str = in.readUTF();
-                            if (str.equals("/serverclosed")) {
-                                break;
+
+                            if (str.startsWith("/")) { // блок для служебных сообщений
+                                if (str.equals("/serverclosed")) {
+                                    break;
+                                }
+
+                                if (str.startsWith("/clientlist")){
+                                    String[] tokens = str.split(" ");
+
+                                    Platform.runLater(new Runnable() { //Поток работает с JavaFX, позволяет менять что то в графике. Синронизация с разными потоками
+                                        @Override
+                                        public void run() {
+                                            clientList.getItems().clear();
+                                            for (int i = 1; i < tokens.length; i++) {
+                                                clientList.getItems().add(tokens[i]);
+                                            }
+                                        }
+                                    });
+
+
+                                }
                             }
-                            textAreaFields.appendText(str + "\n");
+                            else {
+                                textAreaFields.appendText(str + "\n");
+                            }
                         }
 
 
@@ -113,7 +144,9 @@ public class Controller {
                         }
                     }
                 }
-            }).start();
+            });
+            t1.setDaemon(true); // будет закрываться при закрытии крестиком.
+            t1.start();
 
         } catch (IOException e) {
             e.printStackTrace();

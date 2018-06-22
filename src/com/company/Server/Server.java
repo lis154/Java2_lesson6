@@ -1,5 +1,7 @@
 package com.company.Server;
 
+import com.sun.deploy.util.SessionState;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -57,21 +59,26 @@ public class Server { // подключение
         }
     }
 
-    public void broadcastMsg(String msg)
+    public void broadcastMsg(ClientHeader from ,String msg)
     {
         for(ClientHeader o: clients)
         {
-            o.sendMsg(msg);
+            if (!o.chackBlackList(from.getNick())) {
+                o.sendMsg(msg);
+            }
         }
     }
 
-    public void sendMesgOnliOnne(String name, String msg)
+    public void sendMesgOnliOnne(ClientHeader from, String name, String msg)
     {
         for(ClientHeader o: clients)
         {
             if (o.getNick().equals(name)) {
-                o.sendMsg(msg);
+                o.sendMsg("from " + from.getNick() + ": " + msg);
+                from.sendMsg("to " + name + ": " + msg);
+                return;
             }
+            from.sendMsg("клиент с ником " + name + "не найден");
         }
     }
 
@@ -80,10 +87,40 @@ public class Server { // подключение
    public void subscribe(ClientHeader client) // добавляем клиента
    {
        clients.add(client);
+       broadCastClientList();
    }
 
-   public void unsubscriber (ClientHeader clinet)
+   public void unsubscriber (ClientHeader clinet) // удаляем клиента
    {
+
        clients.remove(clinet);
+       broadCastClientList();
    }
+
+
+   public boolean isNickBusy (String nick) // проверка занят ли клиента или нет
+   {
+       for (ClientHeader o: clients) {
+           if (o.getNick().equals(nick))
+           {
+               return true;
+           }
+
+       }
+       return false;
+   }
+
+   public void broadCastClientList(){ // оправляем список клиентов
+       StringBuilder sb = new StringBuilder();
+       sb.append("/clientlist ");
+       for (ClientHeader o: clients){
+           sb.append(o.getNick() + " ");
+       }
+       String out = sb.toString();
+       for (ClientHeader o: clients)
+       {
+           o.sendMsg(out);
+       }
+   }
+
 }

@@ -5,6 +5,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by i.lapshinov on 15.06.2018.
@@ -19,12 +23,15 @@ public class ClientHeader { // реализация
 
     String nick = null;
 
+    List<String> blackList;
+
     public ClientHeader(Server server, Socket socket) {
         try {
             this.server = server;
             this.socket = socket;
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream((socket.getOutputStream()));
+            this.blackList = new ArrayList<String>();
 
             new Thread(new Runnable() {
                 @Override
@@ -40,11 +47,16 @@ public class ClientHeader { // реализация
                             String newNick = AuthService.getNickByLoginAndPass(tockens[1], tockens[2]);
                             if (newNick != null && AuthService.stateLogin(tockens[1]))
                             {
-                                sendMsg("/authok");
-                                nick = newNick;
-                                server.subscribe(ClientHeader.this);
-                                AuthService.setTrueOnClient(tockens[1]);
-                                break;
+                                if (!server.isNickBusy(newNick)) {
+                                    sendMsg("/authok");
+                                    nick = newNick;
+                                    server.subscribe(ClientHeader.this);
+                                    AuthService.setTrueOnClient(tockens[1]);
+                                    break;
+                                } else
+                                {
+                                    sendMsg ("Учетная запись используетсмя");
+                                }
                             }
                             else
                             {
@@ -56,23 +68,27 @@ public class ClientHeader { // реализация
 
                         while (true) {
                             String str = in.readUTF();
-                            if (str.equals("/end")) {
-                                AuthService.setFalseOnClient(ClientHeader.this.getNick());
-                                out.writeUTF("/serverclosed");
-                                break;
-                            }
-                            if (str.startsWith("/w"))
-                            {
-                                String[] message = str.split(" ");
-                                String name = message[1];
-                                String mesg = "";
-                                for (int i = 2; i < message.length; i++) {
-                                    mesg = mesg + message[i];
+                            if (str.startsWith("/")) { // блок отвечающий за служебные сообщения
+                                if (str.equals("/end")) {
+                                    AuthService.setFalseOnClient(ClientHeader.this.getNick());
+                                    out.writeUTF("/serverclosed");
+                                    break;
                                 }
-                                server.sendMesgOnliOnne(name, mesg);
+                                if (str.startsWith("/w")) {
+                                    String[] message = str.split(" ", 3);
+                                    String name = message[1];
+                                    server.sendMesgOnliOnne(ClientHeader.this, name, message[2]);
+                                }
+
+                                if (str.startsWith("/blacklist "))
+                                {
+                                    String[] tokens = str.split(" ");
+                                    blackList.add(tokens[1]);
+                                    sendMsg("Вы добавили пользователя " + tokens[1] + " в черный список");
+                                }
                             }
                             else {
-                                server.broadcastMsg(nick + ":" + str);
+                                server.broadcastMsg(ClientHeader.this,nick + ":" + str);
                             }
                         }
 
@@ -121,5 +137,10 @@ public class ClientHeader { // реализация
 
     public String getNick() {
         return nick;
+    }
+
+    public boolean chackBlackList (String nick)
+    {
+        return  blackList.contains(nick);
     }
 }

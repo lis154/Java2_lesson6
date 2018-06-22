@@ -13,6 +13,7 @@
 <?scenebuilder-styleeshet /css/Style.css?>
 
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ListView?>
 <VBox fx:controller="com.company.Client.Controller"
       xmlns:fx="http://javafx.com/fxml" alignment="center">
 
@@ -23,11 +24,21 @@
 
     </HBox>
 
-    <TextArea fx:id="textAreaFields" editable="false" VBox.vgrow = "ALWAYS"/>
 
-    <HBox fx:id="bottomPanel" managed="false" visible="false">
-        <TextField fx:id="textField" HBox.hgrow="ALWAYS" onAction="#sendMsg" promptText="Введите сообщение..."/>
-        <Button fx:id="btn" onAction="#sendMsg" text="Send Msg"/>
+
+    <HBox VBox.vgrow="ALWAYS">
+            <VBox HBox.hgrow="ALWAYS">
+                <TextArea fx:id="textAreaFields" editable="false" VBox.vgrow = "ALWAYS"/>
+                <HBox fx:id="bottomPanel" managed="false" visible="false">
+
+                    <TextField fx:id="textField" HBox.hgrow="ALWAYS" onAction="#sendMsg" promptText="Введите сообщение..."/>
+                    <Button fx:id="btn" onAction="#sendMsg" text="Send Msg"/>
+
+                </HBox>
+            </VBox>
+        <ListView fx:id = "clientList" managed="false" visible="false">
+        </ListView>
     </HBox>
+
 
 </VBox>
